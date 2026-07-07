@@ -1,0 +1,51 @@
+# === Java & Maven ===
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.car
+*.jack
+.mtj.tmp/
+*.factorypath
+
+# === Émulation & BizHawk ===
+# Ne pas push la ROM (sous copyright) ni les sauvegardes lourdes
+*.gba
+*.gbc
+*.gb
+*.sav
+*.Save
+*.state
+*.State
+*.nvram
+*.wb
+BizHawk/
+config.ini
+*.cfg
+
+# === IDEs & Éditeurs de code ===
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Visual Studio Code
+.vscode/
+
+# Eclipse
+.metadata/
+.classpath
+.project
+.settings/
+*.launch
+
+# === Système & Logs ===
+*.log
+.DS_Store
+Thumbs.db
+.directory
+*~
+*.swp
