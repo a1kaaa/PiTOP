@@ -21,6 +21,7 @@ public class Main {
             byte[] buffer = new byte[10];
             long frameCounter = 0;
             int dec = 1;
+            long startTime = System.currentTimeMillis();
             while (true) {
 
                 // 1. Obtenir la décimale suivante de Pi
@@ -44,9 +45,17 @@ public class Main {
                 int x          = buffer[3] & 0xFF;
                 int y          = buffer[4] & 0xFF;
 
-                // Affichage des logs de progression de Pi
-                System.out.printf("[Frames: %d] Pi Digit: %d -> Action: %d | Map: %d-%d | Pos: (%d, %d)%n | decimal : %d",
-                        frameCounter, piDigit, recvAction, mapGroup, mapNum, x, y, dec);
+                if (dec % 5000 == 0) {
+                    long currentTime = System.currentTimeMillis();
+
+                    double secondsElapsed = (currentTime - startTime) / 1000.0;
+
+                    // Calcul de la vitesse : (Nombre de décimales) / (Temps en secondes)
+                    double speed = (secondsElapsed > 0) ? (dec / secondsElapsed) : 0;
+
+                    System.out.printf("[Frames: %d] Pi Digit: %d -> Action: %d | Map: %d-%d | Pos: (%d, %d) | Progress: %d | Speed: %.2f dec/s %n",
+                            frameCounter, piDigit, recvAction, mapGroup, mapNum, x, y, dec, speed);
+                }
                 dec++;
             }
 
@@ -66,7 +75,10 @@ public class Main {
             case 5: return 4; // Bouton A (Valider)
             case 6: return 5; // Bouton B (Annuler / Courir)
             case 7: return 6; // Start (Menu)
-            default: return 7; // 8, 9, 0 = Pas d'input (Pause)
+            case 8: return 5; // Bouton B (Annuler / Courir)
+            case 9: return 5; // Bouton B (Annuler / Courir)
+            case 0: return 4; // Bouton A (Valider)
+            default: return 0;
         }
     }
 }

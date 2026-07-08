@@ -72,8 +72,4 @@ while true do
         stream:WriteByte(rng_2 % 256)
         stream:WriteByte(rng_1 % 256)
     end)
-
-    -- Affichage à l'écran de BizHawk
-    gui.text(10, 10, string.format("Action recue de Java : %d", action_id))
-    gui.text(10, 25, string.format("Pos: (%d, %d) | Map: %d-%d", x, y, map_group, map_num))
 end
