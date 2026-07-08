@@ -1,84 +1,79 @@
--- Script ultime et universel pour BizHawk (.NET Sockets)
+-- Script Pokémon Saphir - PI CONTROLLER (REVECEIVER MODE)
 luanet.load_assembly("System")
 local TcpClient = luanet.import_type("System.Net.Sockets.TcpClient")
 
-local client = nil
-local stream = nil
-
-local success, err = pcall(function()
+local client, stream = nil, nil
+local success = pcall(function()
     client = TcpClient("127.0.0.1", 4444)
     client.NoDelay = true
     stream = client:GetStream()
 end)
 
 if not success or not client then
-    print("❌ Impossible de se connecter au serveur Java.")
-    if err then print("Détails : " .. tostring(err)) end
+    print("Serveur Java non détecté.")
     return
 else
-    print("✅ Connecté au serveur Java ! Début du streaming...")
+    print("Pi est aux commandes.")
 end
 
-function get_current_action()
-    local keys = joypad.get(1)
-    if keys["Up"]    then return 0 end
-    if keys["Down"]  then return 1 end
-    if keys["Left"]  then return 2 end
-    if keys["Right"] then return 3 end
-    if keys["A"]     then return 4 end
-    if keys["B"]     then return 5 end
-    if keys["Start"] then return 6 end
-    return 5 -- 'B' par défaut
-end
+local HOLD_FRAMES = 12 -- Temps d'appui sur la touche
 
--- Détection de la fonction de lecture de base de BizHawk
-local mem = mainmemory or memory
-local read_b = mem.readbyte or mem.read_u8 or mem.readbyteunsigned
-
-if not read_b then
-    print("❌ Erreur : Impossible de trouver la fonction de lecture RAM de BizHawk.")
-    return
-end
-
--- Boucle principale
 while true do
-    local status, loop_err = pcall(function()
-        local action = get_current_action()
+    -- 1. ATTENDRE L'ORDRE DE JAVA (Bloquant)
+    local action_id = stream:ReadByte()
 
-        -- 1. Lecture des octets simples (X, Y, Direction)
-        local x = read_b(0x02024E4A)
-        local y = read_b(0x02024E4C)
-        local direction = read_b(0x02024E4E)
-
-        -- 2. Reconstruction manuelle du Map ID (16-bits Little Endian)
-        local map_id_low  = read_b(0x02024E6A)
-        local map_id_high = read_b(0x02024E6B)
-        local map_id      = map_id_low + (map_id_high * 256)
-
-        -- 3. Reconstruction manuelle du RNG (32-bits Little Endian)
-        local rng_1 = read_b(0x03005D80)
-        local rng_2 = read_b(0x03005D81)
-        local rng_3 = read_b(0x03005D82)
-        local rng_4 = read_b(0x03005D83)
-        local rng   = rng_1 + (rng_2 * 256) + (rng_3 * 65536) + (rng_4 * 16777216)
-
-        -- 4. Envoi des 10 octets au serveur Java (Big Endian)
-        stream:WriteByte(action % 256)
-        stream:WriteByte(math.floor(map_id / 256) % 256)
-        stream:WriteByte(map_id % 256)
-        stream:WriteByte(x % 256)
-        stream:WriteByte(y % 256)
-        stream:WriteByte(direction % 256)
-        stream:WriteByte(math.floor(rng / 16777216) % 256)
-        stream:WriteByte(math.floor(rng / 65536) % 256)
-        stream:WriteByte(math.floor(rng / 256) % 256)
-        stream:WriteByte(rng % 256)
-    end)
-
-    if not status then
-        print("❌ Erreur dans la boucle de capture : " .. tostring(loop_err))
+    -- Si la connexion coupe (-1), on s'arrête
+    if action_id == -1 or action_id == 255 then
+        print("Connexion perdue avec le serveur Java.")
         break
     end
 
-    emu.frameadvance()
+-- 2. TRADUIRE L'ACTION ID EN TOUCHES VIRTUELLES GBA
+    local current_joypad = {}
+    if action_id == 0 then current_joypad["Up"] = true
+    elseif action_id == 1 then current_joypad["Down"] = true
+    elseif action_id == 2 then current_joypad["Left"] = true
+    elseif action_id == 3 then current_joypad["Right"] = true
+    elseif action_id == 4 then current_joypad["A"] = true      -- Vrai bouton A de la console
+    elseif action_id == 5 then current_joypad["B"] = true      -- Vrai bouton B de la console
+    elseif action_id == 6 then current_joypad["Start"] = true  -- Vrai bouton Start (Menu)
+    -- Si action_id >= 7 : Pas d'input (Pause)
+    end
+
+    -- 3. MAINTENIR L'INPUT PENDANT N FRAMES
+    for i = 1, HOLD_FRAMES do
+        joypad.set(current_joypad)
+        emu.frameadvance()
+    end
+
+    -- 4. LIRE LA RAM ET RENVOYER LA TÉLÉMÉTRIE À JAVA
+    local x         = memory.readbyte(0x25734, "EWRAM")
+    local y         = memory.readbyte(0x25736, "EWRAM")
+    local map_group = memory.readbyte(0x2572F, "EWRAM")
+    local map_num   = memory.readbyte(0x25730, "EWRAM")
+
+    local rng_1 = memory.readbyte(0x48C4, "IWRAM")
+    local rng_2 = memory.readbyte(0x48C5, "IWRAM")
+    local rng_3 = memory.readbyte(0x48C6, "IWRAM")
+    local rng_4 = memory.readbyte(0x48C7, "IWRAM")
+
+    local safe_direction = action_id <= 3 and action_id or 1
+
+    -- Envoi du paquet de 10 octets de réponse
+    pcall(function()
+        stream:WriteByte(action_id % 256)
+        stream:WriteByte(map_group % 256)
+        stream:WriteByte(map_num % 256)
+        stream:WriteByte(x % 256)
+        stream:WriteByte(y % 256)
+        stream:WriteByte(safe_direction)
+        stream:WriteByte(rng_4 % 256)
+        stream:WriteByte(rng_3 % 256)
+        stream:WriteByte(rng_2 % 256)
+        stream:WriteByte(rng_1 % 256)
+    end)
+
+    -- Affichage à l'écran de BizHawk
+    gui.text(10, 10, string.format("Action recue de Java : %d", action_id))
+    gui.text(10, 25, string.format("Pos: (%d, %d) | Map: %d-%d", x, y, map_group, map_num))
 end
