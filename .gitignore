@@ -24,8 +24,17 @@ target/
 BizHawk/
 config.ini
 *.cfg
-
-# === IDEs & Éditeurs de code ===
+build/
+pitop-sim-c/pitop-sim
+pitop-sim-c/build/
+pitop-sim-c/pi_digits.bin
+pitop-sim-c/*.log
+pitop-sim-c/*.trace
+pitop-sim-c/*.heatmap
+pitop-sim-c/data/maps/*.txt
+pitop-sim-c/data/index.csv
+ 
+ # === IDEs & Éditeurs de code ===
 # IntelliJ IDEA
 .idea/
 *.iml
