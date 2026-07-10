@@ -23,13 +23,15 @@ static void print_usage(const char *prog) {
         "\n"
         "Options:\n"
         "  -n N       Nombre d'actions Pi à simuler (défaut: 10000000)\n"
-        "  -p FILE    Fichier de décimales Pi pré-calculées (défaut: pi_digits.bin)\n"
+        "  -p FILE    Fichier de décimales Pi pré-calculées\n"
+        "             (défaut: streaming api.pi.delivery)\n"
         "  -m FILE    Index des cartes CSV        (défaut: data/index.csv)\n"
         "  -l FILE    Fichier de log              (défaut: simulation.log)\n"
         "  -h         Affiche cette aide\n"
         "\n"
-        "Le fichier pi_digits.bin peut être généré depuis le projet Java\n"
-        "avec : java pokemonpi.tools.GenPiFile > pi_digits.bin\n",
+        "Mode fichier :  ./pitop-sim -p pi_digits.bin\n"
+        "Mode API     :  ./pitop-sim\n"
+        "                (streaming depuis 100 trillion digits record Google)\n",
         prog);
 }
 
@@ -50,7 +52,7 @@ int main(int argc, char **argv) {
 
     printf("PiTOP Simulation C — v0.1\n");
     printf("Actions : %llu\n", (unsigned long long)cfg.total_actions);
-    printf("Pi file : %s\n", cfg.pi_file);
+    printf("Pi file : %s\n", cfg.pi_file ? cfg.pi_file : "(streaming API)");
     printf("Map idx : %s\n", cfg.map_index);
     printf("Log     : %s\n\n", cfg.log_file);
 

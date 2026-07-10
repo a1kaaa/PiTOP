@@ -7,15 +7,13 @@
 /*
  * pi_generator.h — Générateur infini des décimales de Pi
  *
- * Implémente l'algorithme de Gibbons (spigot algorithm) pour produire
- * les décimales de π les unes après les autres. L'itérateur est infini.
+ * Deux modes :
+ *   1. Fichier pré-calculé : pi_generator_new("pi_digits.bin")
+ *   2. Streaming API      : pi_generator_new(NULL)  ← utilise api.pi.delivery
  *
- * Deux modes de fonctionnement :
- *   1. GMP : utilise GNU MP pour les grands entiers (nécessite -lgmp)
- *   2. Fichier pré-calculé : lit depuis un fichier binaire (défaut)
- *
- * Le fichier pré-calculé peut être généré via la classe Java PiGenerator
- * existante dans src/main/java/pokemonpi/simulation/PiGenerator.java.
+ * Le mode API stream les décimales depuis le record Google Cloud
+ * (100 000 000 000 000 digits) via https://api.pi.delivery/v1/pi,
+ * par paquets de 1000 digits. Nécessite curl.
  */
 
 /* ------------------------------------------------------------------ */
@@ -24,8 +22,10 @@
 
 typedef struct PiGenerator PiGenerator;
 
-/* Crée un nouveau générateur. Mode fichier : path = "pi_digits.bin".
- * Si path est NULL, tente d'utiliser GMP (si disponible).
+/* Crée un générateur.
+ *   path != NULL : lit depuis un fichier binaire (format: entête 4 octets
+ *                  uint32_t LE = nb digits, puis digits en ASCII).
+ *   path == NULL : streaming via l'API pi.delivery (curl nécessaire).
  * Retourne NULL en cas d'échec. */
 PiGenerator *pi_generator_new(const char *path);
 
@@ -42,24 +42,18 @@ void pi_generator_free(PiGenerator *pg);
 /*  Mapping décimale → Action (identique au Java Main.java)           */
 /* ------------------------------------------------------------------ */
 
-/* Traduit un chiffre 0-9 en action GBA selon le mapping du projet.
- *
- *   1 → UP      2 → DOWN    3 → LEFT    4 → RIGHT
- *   5 → A       6 → B       7 → START
- *   8 → B       9 → B       0 → A
- */
 static inline int pi_digit_to_action(int digit) {
     switch (digit) {
-        case 1: return 0; /* ACTION_UP */
-        case 2: return 1; /* ACTION_DOWN */
-        case 3: return 2; /* ACTION_LEFT */
-        case 4: return 3; /* ACTION_RIGHT */
-        case 5: return 4; /* ACTION_A */
-        case 6: return 5; /* ACTION_B */
-        case 7: return 6; /* ACTION_START */
-        case 8: return 5; /* ACTION_B */
-        case 9: return 5; /* ACTION_B */
-        case 0: return 4; /* ACTION_A */
+        case 1: return 0;
+        case 2: return 1;
+        case 3: return 2;
+        case 4: return 3;
+        case 5: return 4;
+        case 6: return 5;
+        case 7: return 6;
+        case 8: return 5;
+        case 9: return 5;
+        case 0: return 4;
         default: return 0;
     }
 }

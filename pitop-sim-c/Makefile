@@ -62,7 +62,7 @@ help:
 	@echo ""
 	@echo "Options du simulateur:"
 	@echo "  -n N    Nombre d'actions (défaut: 10000000)"
-	@echo "  -p F    Fichier de décimales de Pi"
+	@echo "  -p F    Fichier de décimales Pi (défaut: streaming api.pi.delivery)"
 	@echo "  -m F    Index des cartes CSV"
 	@echo "  -l F    Fichier de log"
 	@echo "  -h      Aide"

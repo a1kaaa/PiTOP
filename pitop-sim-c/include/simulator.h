@@ -23,7 +23,7 @@ typedef struct {
 
 /* Valeurs par défaut de la configuration. */
 #define SIM_CONFIG_DEFAULT { \
-    .pi_file = "pi_digits.bin", \
+    .pi_file = NULL, \
     .map_index = "data/index.csv", \
     .log_file = "simulation.log", \
     .total_actions = 10000000, \
